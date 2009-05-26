@@ -149,6 +149,46 @@ attention to the existance of your classes, rather than blithely ignoring them.
 The version parsing is basically the same as what M::I's C<< ->version_form >>
 does, so should hopefully work as well as it does.
 
+=head1 METHODS
+
+=head2 discover_classes
+
+ Class::Discover->discover_classes(\%opts)
+
+Takes a single options hash-ref, and returns a array-ref of hashes with the
+following format:
+
+ { MyClass => { file => "lib/MtClass.pm", type => "class", version => "1" } }
+
+C<version> will only be present if the class has a (detected) version.
+C<type> is the C<keyword> match that triggered this class.
+
+The following options are understood:
+
+=over
+
+=item dir
+
+The (absolute) directory from which files should be given relative to. If
+C<files> is not passed, then the dir under which to search for modules.
+
+=item files
+
+Array-ref of files in which to look. If provided, then only these files will be
+searched.
+
+=item keywords
+
+List of 'keywords' which are treated as being class declarators. Defaults to
+C<class> and C<role>.
+
+=item no_index
+
+A hash of arrays with keys of C<directory> and C<file> which are ignored when
+searching for packages.
+
+=back
+
 =head1 SEE ALSO
 
 L<MooseX::Declare> for the main reason for this module to exist.
