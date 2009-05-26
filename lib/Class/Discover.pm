@@ -1,29 +1,40 @@
 package Class::Discover;
 
+use strict;
+use warnings;
+
 use File::Find::Rule;
 use File::Find::Rule::Perl;
 use PPI;
 use File::Temp;
 use ExtUtils::MM_Unix;
+use Carp qw/croak/;
+use Path::Class;
 
 sub discover_classes {
   my ($class, $opts) = @_;
 
   $opts ||= {};
   $opts->{keywords} ||= [qw/class role/];
-  $opts->{require_use} ||= ['MooseX::Declare'];
 
-  for (qw/keywords require_use/) {
-    $opts->{$_} = [ $opts->{$_} ]
-      if (ref $opts->{$_} ||'') ne 'ARRAY';
-  }
+  $opts->{keywords} = [ $opts->{keywords} ]
+    if (ref $opts->{keywords} ||'') ne 'ARRAY';
+
+  $opts->{keywords} = { map { $_ => 1 } @{$opts->{keywords}} };
 
   my @files;
+  my $dir = dir($opts->{dir} || "");
 
-  if ($opts->{files}) {
-    @files = @{opts->{files}};
+  croak "'dir' option to discover_classes must be absolute"
+    unless $dir->is_absolute;
+
+  if ((ref $opts->{files} || '') eq 'ARRAY') {
+    @files = @{$opts->{files}};
   } 
-  elsif (my $dir = $opts->{dir}) {
+  elsif ($opts->{files}) {
+    @files = ($opts->{files});
+  }
+  elsif ($dir) {
     my $rule = File::Find::Rule->new;
     my $no_index = $opts->{no_index};
     @files = $rule->no_index({
@@ -33,61 +44,71 @@ sub discover_classes {
        ->in($dir);
   }
 
-  for (@files) {
-    my $file = $_;
-    s/^\Q$dir\/\E//;
-    $class->_search_for_classes_in_file($file, $_)
-  }
+  croak "Found no files!" unless @files;
+  
+  return [ map {
+    my $file = file($_);
+   
+    local $opts->{file} = $file->relative($dir)->stringify;
+    $class->_search_for_classes_in_file($opts, "$file")
+  } @files ];
 }
 
 sub _search_for_classes_in_file {
-  my ($class, $file, $rel_file);
+  my ($class, $opts, $file) = @_;
 
   my $doc = PPI::Document->new($file);
 
-  for ($doc->children) {
-
+  return map {
+    $opts->{prefix} = "";
+    $class->_search_for_classes_in_node($_, $opts);
+  } grep {
     # Tokens can't have children
-    next if $_->isa('PPI::Token');
-    $self->_search_for_classes_in_node($_, "", $short_file)
-  }
+    ! $_->isa("PPI::Token")
+  } $doc->children;
 }
 
 sub _search_for_classes_in_node {
-  my ($self, $node, $class_prefix, $file) = @_;
+  my ($self, $node, $opts) = @_;
 
   my $nodes = $node->find(sub {
-      $_[1]->isa('PPI::Token::Word') && $_[1]->content eq 'class' || undef
+      # Return undef says don't descend
+      $_[1]->isa('PPI::Token::Word') && $opts->{keywords}{$_[1]->content}
+                                     || undef
   });
-  return $self unless $nodes;
+  return unless $nodes;
 
+
+  my @ret;
   for my $n (@$nodes) {
-    $n= $n->next_token;
+    my $type = $n->content;
+    $n = $n->next_token;
     # Skip over whitespace
     $n = $n->next_token while ($n && !$n->significant);
 
     next unless $n && $n->isa('PPI::Token::Word');
 
-    my $class = $class_prefix . $n->content;
+    my $class = $opts->{prefix} . $n->content;
 
     # Now look for the '{'
     $n = $n->next_token while ($n && $n->content ne '{' );
 
     unless ($n) {
-      warn "Unable to find '{' after 'class' somewhere in $file\n";
+      warn "Unable to find '{' after 'class' somewhere in $opts->{file}\n";
       return;
     }
 
-    $self->provides( $class => { file => $file });
+    my $cls = { $class => { file => $opts->{file}, type => $type } };
+    push @ret, $cls;
 
     # $n was the '{' token, its parent is the block/constructor for the 'hash'
     $n = $n->parent;
   
     for ($n->children) {
-
       # Tokens can't have children
       next if $_->isa('PPI::Token');
-      $self->_search_for_classes_in_node($_, "${class}::", $file)
+      local $opts->{prefix} = "${class}::";
+      push @ret, $self->_search_for_classes_in_node($_, $opts)
     }
 
     # I dont fancy duplicating the effort of parsing version numbers. So write
@@ -98,14 +119,14 @@ sub _search_for_classes_in_node {
     $fh->close;
     my $ver = ExtUtils::MM_Unix->parse_version($fh);
 
-    $self->provides->{$class}{version} = $ver if defined $ver && $ver ne "undef";
+    $cls->{$class}{version} = $ver if defined $ver && $ver ne "undef";
 
     # Remove the block from the parent, so that we dont get confused by 
     # versions of sub-classes
     $n->parent->remove_child($n);
   }
 
-  return $self;
+  return @ret;
 }
 
 1;
