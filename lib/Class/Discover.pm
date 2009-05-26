@@ -88,7 +88,10 @@ sub _search_for_classes_in_node {
 
     next unless $n && $n->isa('PPI::Token::Word');
 
-    my $class = $opts->{prefix} . $n->content;
+    my $class = $n->content;
+
+    $class = $opts->{prefix} . $class
+      if $class =~ /^::/;
 
     # Now look for the '{'
     $n = $n->next_token while ($n && $n->content ne '{' );
@@ -107,7 +110,7 @@ sub _search_for_classes_in_node {
     for ($n->children) {
       # Tokens can't have children
       next if $_->isa('PPI::Token');
-      local $opts->{prefix} = "${class}::";
+      local $opts->{prefix} = $class;
       push @ret, $self->_search_for_classes_in_node($_, $opts)
     }
 
