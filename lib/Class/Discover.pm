@@ -3,6 +3,8 @@ package Class::Discover;
 use strict;
 use warnings;
 
+our $VERSION = "1.000000";
+
 use File::Find::Rule;
 use File::Find::Rule::Perl;
 use PPI;
@@ -41,7 +43,7 @@ sub discover_classes {
         directory => [ map { "$dir/$_" } @{$no_index->{directory} || []} ],
         file => [ map { "$dir/$_" } @{$no_index->{file} || []} ],
     } )->perl_module
-       ->in($dir);
+       ->in($dir)
   }
 
   croak "Found no files!" unless @files;

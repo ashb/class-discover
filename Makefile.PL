@@ -1,10 +1,10 @@
 use warnings;
-use inc::Module::Install 0.89;
+use inc::Module::Install 0.91;
 
 all_from 'lib/Class/Discover.pm';
 
 requires 'File::Find::Rule';
-requires 'File::Find::Rule::Perl';
+requires 'File::Find::Rule::Perl' => '1.07';
 requires 'PPI';
 requires 'File::Temp';
 requires 'ExtUtils::MM_Unix';
@@ -14,7 +14,9 @@ test_requires 'Test::More';
 test_requires 'Test::Differences';
 
 jsonmeta();
-write_all;
+write_all();
+
+auto_install();
 
 WriteMakefile(
   dist => {

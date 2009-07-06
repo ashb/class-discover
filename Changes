@@ -1,0 +1,4 @@
+Version history for Class::Discover
+
+1.000000 - 18 Jul 2009
+  - Initial version of code split out from Module::Install::ProvidesClass
