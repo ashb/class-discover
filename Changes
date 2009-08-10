@@ -1,4 +1,6 @@
 Version history for Class::Discover
 
+  - Fixed Random-Order test failure ( RT#48571 , KENTNL )
+
 1.000000 - 18 Jul 2009
   - Initial version of code split out from Module::Install::ProvidesClass
