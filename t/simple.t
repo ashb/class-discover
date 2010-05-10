@@ -4,6 +4,7 @@ use warnings;
 use FindBin qw/$Bin/;
 use Test::More tests => 5;
 use Test::Differences;
+use Path::Class qw(dir);
 
 use_ok('Class::Discover');
 
@@ -21,6 +22,17 @@ sub c_sort($){
     [ sort { class_sort($a,$b) } @{ $_[0] } ]
 }
 
+sub make_paths_native {
+    my ( $result_list ) = @_;
+    
+    for ( @{$result_list} ) {
+        my ($result) = values %{$_};
+        $result->{file} = dir($result->{file})->stringify;
+    }
+    
+    return;
+}
+
 # /RT
 
 my $classes = Class::Discover->discover_classes({
@@ -29,6 +41,7 @@ my $classes = Class::Discover->discover_classes({
 });
 my $expected = [ { MyClass => { file => "lib/Class1.pm", type => "class", version => "0.03_a" } } ];
 
+make_paths_native($expected);
 eq_or_diff( c_sort $classes, c_sort $expected, "Provided files" );
 
 ################################################################################
@@ -39,6 +52,7 @@ $expected = [
     { MyClass2 => { file => "lib/Class2.pm", type => "class" } },
 ];
 
+make_paths_native($expected);
 eq_or_diff( c_sort $classes, c_sort $expected, "Found files" );
 
 ################################################################################
@@ -51,6 +65,7 @@ $classes = Class::Discover->discover_classes({
 });
 $expected = [ { MyClass2 => { file => "lib/Class2.pm", type => "class" } } ];
 
+make_paths_native($expected);
 eq_or_diff( c_sort $classes, c_sort $expected, "Found files, no_index" );
 
 ################################################################################
@@ -65,4 +80,5 @@ $expected = [
     { MyRole => { file => "lib/Nested.pm", type => "role" } },
 ];
 
+make_paths_native($expected);
 eq_or_diff( c_sort $classes, c_sort $expected, "Found files, no_index" );
