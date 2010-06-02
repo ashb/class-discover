@@ -13,10 +13,10 @@ requires 'Path::Class';
 test_requires 'Test::More';
 test_requires 'Test::Differences';
 
-jsonmeta();
-write_all();
 
 auto_install();
+WriteAll();
+
 
 WriteMakefile(
   dist => {
