@@ -197,7 +197,7 @@ L<MooseX::Declare> for the main reason for this module to exist.
 
 L<Module::Install::ProvidesClass>
 
-L<DistZilla>
+L<Dist::Zilla>
 
 =head1 AUTHOR
 
