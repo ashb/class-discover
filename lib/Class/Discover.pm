@@ -24,6 +24,9 @@ sub discover_classes {
 
   $opts->{keywords} = { map { $_ => 1 } @{$opts->{keywords}} };
 
+  if ($opts->{ppi_document}) {
+    return [ $class->_search_for_classes_in_doc($opts, $opts->{ppi_document}) ];
+  }
   my @files;
   my $dir = dir($opts->{dir} || "");
 
@@ -52,14 +55,13 @@ sub discover_classes {
     my $file = file($_);
    
     local $opts->{file} = $file->relative($dir)->stringify;
-    $class->_search_for_classes_in_file($opts, "$file")
+    my $doc = PPI::Document->new("$file");
+    $class->_search_for_classes_in_doc($opts, $doc)
   } @files ];
 }
 
-sub _search_for_classes_in_file {
-  my ($class, $opts, $file) = @_;
-
-  my $doc = PPI::Document->new($file);
+sub _search_for_classes_in_doc {
+  my ($class, $opts, $doc) = @_;
 
   return map {
     $opts->{prefix} = "";
@@ -82,6 +84,7 @@ sub _search_for_classes_in_node {
 
 
   my @ret;
+  my $file = $opts->{file} || '(no file)';
   for my $n (@$nodes) {
     my $type = $n->content;
     $n = $n->next_token;
@@ -99,7 +102,7 @@ sub _search_for_classes_in_node {
     $n = $n->next_token while ($n && $n->content ne '{' );
 
     unless ($n) {
-      warn "Unable to find '{' after 'class' somewhere in $opts->{file}\n";
+      warn "Unable to find '{' after 'class' somewhere in $file\n";
       return;
     }
 
@@ -188,6 +191,11 @@ C<class> and C<role>.
 
 A hash of arrays with keys of C<directory> and C<file> which are ignored when
 searching for packages.
+
+=item ppi_document
+
+An instance of L<PPI::Document>. If provided, will only look in this document
+when searching for packages.
 
 =back
 
