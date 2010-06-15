@@ -2,9 +2,10 @@ use strict;
 use warnings;
 
 use FindBin qw/$Bin/;
-use Test::More tests => 5;
+use Test::More tests => 6;
 use Test::Differences;
 use Path::Class qw(dir);
+use PPI::Document;
 
 use_ok('Class::Discover');
 
@@ -46,6 +47,14 @@ eq_or_diff( c_sort $classes, c_sort $expected, "Provided files" );
 
 ################################################################################
 
+$classes = Class::Discover->discover_classes({
+  ppi_document => PPI::Document->new("$Bin/data/dir1/lib/Class1.pm")
+});
+$expected = [ { MyClass => { file => undef, type => "class", version => "0.03_a" } } ];
+
+eq_or_diff( c_sort $classes, c_sort $expected, "Provided ppi_document" );
+
+################################################################################
 $classes = Class::Discover->discover_classes({ dir => "$Bin/data/dir1" });
 $expected = [
     { MyClass => { file => "lib/Class1.pm", type => "class", version => "0.03_a" } },
