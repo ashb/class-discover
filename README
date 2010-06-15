@@ -46,7 +46,7 @@ SEE ALSO
 
     Module::Install::ProvidesClass
 
-    DistZilla
+    Dist::Zilla
 
 AUTHOR
     Ash Berlin "<ash@cpan.org>". (C) 2009. All rights reserved.

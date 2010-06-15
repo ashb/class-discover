@@ -3,7 +3,7 @@ package Class::Discover;
 use strict;
 use warnings;
 
-our $VERSION = "1.000002";
+our $VERSION = "1.000003";
 
 use File::Find::Rule;
 use File::Find::Rule::Perl;
